@@ -5,7 +5,7 @@
   <Period id="0">
     <AdaptationSet id="0" contentType="video" width="480" height="270" frameRate="30/1" subsegmentAlignment="true" par="16:9">
       <Representation id="0" bandwidth="327259" codecs="avc1.42c01e" mimeType="video/mp4" sar="1:1">
-        <BaseURL>video.mp4</BaseURL>
+        <BaseURL>uploads%2Fencrypted%2Fvideo.mp4%2Fvideo.mp4</BaseURL>
         <SegmentBase indexRange="835-938" timescale="30">
           <Initialization range="0-834"/>
         </SegmentBase>
@@ -14,7 +14,7 @@
     <AdaptationSet id="1" contentType="audio" subsegmentStartsWithSAP="1" subsegmentAlignment="true">
       <Representation id="1" bandwidth="113640" codecs="mp4a.40.2" mimeType="audio/mp4" audioSamplingRate="48000">
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
-        <BaseURL>audio.mp4</BaseURL>
+        <BaseURL>uploads%2Fencrypted%2Fvideo.mp4%2Faudio.mp4</BaseURL>
         <SegmentBase indexRange="768-871" timescale="48000">
           <Initialization range="0-767"/>
         </SegmentBase>

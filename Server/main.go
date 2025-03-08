@@ -137,7 +137,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate output paths
-	encryptedPath := "uploads/encrypted/video.mp4"
+	encryptedPath := "uploads/encrypted/"
 	mpdPath := "uploads/encrypted/stream.mpd"
 
 	// Run encryption
@@ -151,13 +151,32 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EncryptAndPackage(inputFile, outputFile, mpdFile string) error {
-	cmd := exec.Command("packager",
-		fmt.Sprintf("in=%s,stream=video,output=%s,drm_label=SD", inputFile, outputFile),
-		"--enable_raw_key_encryption",
-		"--keys=label=SD:key_id=0123456789abcdef0123456789abcdef:key=abcdef0123456789abcdef0123456789",
-		fmt.Sprintf("--mpd_output=%s", mpdFile),
-	)
+	// cmd := exec.Command("packager",
+	// 	// fmt.Sprintf("in=%s,stream=video,output=%s,drm_label=SD", inputFile, outputFile),
+	// 	fmt.Sprintf("in=%s,stream=video,init_segment=h264/init.mp4,segment_template=h264_segments/$Number$.m4s", inputFile),
+	// 	// in=h264_baseline_360p_600.mp4,stream=video,init_segment=h264_360p/init.mp4,segment_template=h264_360p/$Number$.m4s
+	// 	"--enable_raw_key_encryption",
+	// 	"--keys=label=SD:key_id=0123456789abcdef0123456789abcdef:key=abcdef0123456789abcdef0123456789",
+	// 	"--generate_static_live_mpd",
+	// 	fmt.Sprintf("--mpd_output=%s", mpdFile),
+	// )
 
+	// cmd := exec.Command("packager",
+	// 	fmt.Sprintf("in=%s,stream=video,init_segment=%s/video_init.mp4,segment_template=%s/video_segment_$Number$.m4s", inputFile, outputFile, outputFile),
+	// 	fmt.Sprintf("in=%s,stream=audio,init_segment=%s/audio_init.mp4,segment_template=%s/audio_segment_$Number$.m4s", inputFile, outputFile, outputFile),
+	// 	"--enable_raw_key_encryption",
+	// 	"--keys", "key_id=1234567890abcdef1234567890abcdef:key=abcdef1234567890abcdef1234567890",
+	// 	"--protection_scheme", "cbcs",
+	// 	"--mpd_output", fmt.Sprintf("%s/stream.mpd", outputFile),
+	// )
+
+	cmd := exec.Command(
+		"packager",
+		fmt.Sprintf("input=%s,stream=video,output=%s/video.mp4", inputFile, outputFile),
+		fmt.Sprintf("input=%s,stream=audio,output=%s/audio.mp4", inputFile, outputFile),
+		"--mpd_output", fmt.Sprintf("%s/stream.mpd", outputFile),
+		"--base_urls", "http://localhost:8080/encrypted/",
+	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("Shaka Packager error: %v\n%s", err, string(output))
@@ -367,27 +386,28 @@ func main() {
 	// Apply logging middleware for requests
 	r.Use(LoggingMiddleware)
 
-	fs := http.FileServer(http.Dir("uploads/encrypted"))
-	r.Handle("/encrypted/", http.StripPrefix("/encrypted/", fs))
-
 	// Define routes
 	r.HandleFunc("/", HomeHandler).Methods("GET")
 
 	// Upload route
 	r.HandleFunc("/upload", UploadHandler).Methods("POST")
-	r.HandleFunc("/progress", ProgressHandler).Methods("GET")
+	// r.HandleFunc("/progress", ProgressHandler).Methods("GET")
 
-	r.HandleFunc("/video/{id}", VideoHandler).Methods("GET")
-	http.Handle("/uploads/", http.StripPrefix("/uploads/", enableCORS(http.FileServer(http.Dir("uploads"))))) // to get the output.mpd
+	// r.HandleFunc("/video/{id}", VideoHandler).Methods("GET")
+	// http.Handle("/uploads/", http.StripPrefix("/uploads/", enableCORS(http.FileServer(http.Dir("uploads"))))) // to get the output.mpd
+
+	// r.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", enableCORS(http.FileServer(http.Dir("uploads/encrypted"))))) //http://localhost:8080/uploads/stream.mpd
+	r.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", enableCORS(http.FileServer(http.Dir("uploads/encrypted")))))
 	// http.Handle("/uploads/", enableCORS(http.StripPrefix("/uploads/", fs)))
 	// Protected route with authentication
-	protected := r.PathPrefix("/secure").Subrouter()
-	protected.Use(AuthMiddleware)
-	protected.HandleFunc("/", ProtectedHandler).Methods("GET")
+	// protected := r.PathPrefix("/secure").Subrouter()
+	// protected.Use(AuthMiddleware)
+	// protected.HandleFunc("/", ProtectedHandler).Methods("GET")
 
 	// Start the server
 	// fmt.Println("Server running on port 8080")
 	// http.ListenAndServe(":3000", r)
+
 	log.Println("Server started at http://localhost:8080")
 	http.ListenAndServe(":8080", r)
 
