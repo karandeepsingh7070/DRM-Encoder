@@ -36,64 +36,64 @@ func enableCORS(h http.Handler) http.Handler {
 }
 
 // UploadHandler - Handles video uploads
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	// Limit upload size to 100MB
-	r.ParseMultipartForm(100 << 20) // 100MB
+// func UploadHandler(w http.ResponseWriter, r *http.Request) {
+// 	// Limit upload size to 100MB
+// 	r.ParseMultipartForm(100 << 20) // 100MB
 
-	// Get the uploaded file
-	file, handler, err := r.FormFile("video")
-	if err != nil {
-		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
+// 	// Get the uploaded file
+// 	file, handler, err := r.FormFile("video")
+// 	if err != nil {
+// 		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+// 		return
+// 	}
+// 	defer file.Close()
 
-	// Extract file extension and check if it's allowed
-	ext := filepath.Ext(handler.Filename)
-	if !allowedExtensions[ext] {
-		http.Error(w, "Invalid file type. Only MP4 and MOV are allowed.", http.StatusBadRequest)
-		return
-	}
+// 	// Extract file extension and check if it's allowed
+// 	ext := filepath.Ext(handler.Filename)
+// 	if !allowedExtensions[ext] {
+// 		http.Error(w, "Invalid file type. Only MP4 and MOV are allowed.", http.StatusBadRequest)
+// 		return
+// 	}
 
-	// Create a new file in "uploads/" directory
-	// dst, err := os.Create(fmt.Sprintf("uploads/%s", handler.Filename))
-	// if err != nil {
-	// 	http.Error(w, "Error saving the file", http.StatusInternalServerError)
-	// 	return
-	// }
-	// defer dst.Close()
+// 	// Create a new file in "uploads/" directory
+// 	// dst, err := os.Create(fmt.Sprintf("uploads/%s", handler.Filename))
+// 	// if err != nil {
+// 	// 	http.Error(w, "Error saving the file", http.StatusInternalServerError)
+// 	// 	return
+// 	// }
+// 	// defer dst.Close()
 
-	// Save original file
-	originalPath := fmt.Sprintf("uploads/%s", handler.Filename)
-	dst, err := os.Create(originalPath)
-	if err != nil {
-		http.Error(w, "Error saving the file", http.StatusInternalServerError)
-		return
-	}
-	defer dst.Close()
+// 	// Save original file
+// 	originalPath := fmt.Sprintf("uploads/%s", handler.Filename)
+// 	dst, err := os.Create(originalPath)
+// 	if err != nil {
+// 		http.Error(w, "Error saving the file", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	defer dst.Close()
 
-	// Copy uploaded file to new location
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		http.Error(w, "Error writing the file", http.StatusInternalServerError)
-		return
-	}
-	// Create a progress channel
-	// progressChan := make(chan string)
-	// Convert video format
-	outputPath := fmt.Sprintf("uploads/converted_h264_%s", handler.Filename) // Convert to MKV
-	// err = ConvertVideo(originalPath, outputPath, "uploads", progressChan)
-	ok := ConvertToMP4(originalPath, outputPath)
-	fmt.Fprintln(w, "conversion started")
-	if ok != nil {
-		http.Error(w, "Video conversion failed", http.StatusInternalServerError)
-		// close(progressChan)
-		return
-	}
-	// _, err = io.Copy(dst, ok)
+// 	// Copy uploaded file to new location
+// 	_, err = io.Copy(dst, file)
+// 	if err != nil {
+// 		http.Error(w, "Error writing the file", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	// Create a progress channel
+// 	// progressChan := make(chan string)
+// 	// Convert video format
+// 	outputPath := fmt.Sprintf("uploads/converted_h264_%s", handler.Filename) // Convert to MKV
+// 	// err = ConvertVideo(originalPath, outputPath, "uploads", progressChan)
+// 	ok := ConvertToMP4(originalPath, outputPath)
+// 	fmt.Fprintln(w, "conversion started")
+// 	if ok != nil {
+// 		http.Error(w, "Video conversion failed", http.StatusInternalServerError)
+// 		// close(progressChan)
+// 		return
+// 	}
+// 	// _, err = io.Copy(dst, ok)
 
-	fmt.Fprintf(w, "File uploaded and converted successfully: %s", outputPath)
-}
+// 	fmt.Fprintf(w, "File uploaded and converted successfully: %s", outputPath)
+// }
 
 // ConvertVideo runs FFmpeg to convert a video to MKV
 // func ConvertVideo(inputPath, outputPath string) error {
@@ -102,57 +102,137 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 // 	return err
 // }
 
-func PackageToDASH(inputFile, uploadFolder string) error {
-	outputMPD := fmt.Sprintf("%s/output.mpd", uploadFolder)
+// UploadHandler handles file uploads
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	// Limit upload size to 100MB
+	r.ParseMultipartForm(100 << 20) // 100MB
 
-	// Debug: Print input file path
-	fmt.Println("DASH Packaging Input File:", inputFile)
-	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
-		return fmt.Errorf("MP4Box error: input file does not exist: %s", inputFile)
+	// Get uploaded file
+	file, handler, err := r.FormFile("video")
+	if err != nil {
+		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Extract file extension
+	ext := filepath.Ext(handler.Filename)
+	if ext != ".mp4" {
+		http.Error(w, "Invalid file type. Only MP4 allowed.", http.StatusBadRequest)
+		return
 	}
 
-	// Run MP4Box
-	cmd := exec.Command("MP4Box", "-dash", "4000", "-frag", "4000", "-rap",
-		"-segment-name", fmt.Sprintf("%s/segment_", "segments"), // Store segments in uploads folder
-		"-out", outputMPD, inputFile)
-	err := cmd.Run()
-	return err
+	// Save uploaded file
+	uploadPath := fmt.Sprintf("uploads/%s", handler.Filename)
+	dst, err := os.Create(uploadPath)
+	if err != nil {
+		http.Error(w, "Error saving the file", http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+	_, err = io.Copy(dst, file)
+	if err != nil {
+		http.Error(w, "Error writing the file", http.StatusInternalServerError)
+		return
+	}
 
-	// cmd.Dir = uploadFolder
+	// Generate output paths
+	encryptedPath := "uploads/encrypted/video.mp4"
+	mpdPath := "uploads/encrypted/stream.mpd"
 
-	// output, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	return fmt.Errorf("MP4Box error: %v\n%s", err, string(output))
-	// }
+	// Run encryption
+	err = EncryptAndPackage(uploadPath, encryptedPath, mpdPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Encryption failed: %v", err), http.StatusInternalServerError)
+		return
+	}
 
-	// fmt.Println("DASH Packaging completed in", uploadFolder)
-	// return nil
+	fmt.Fprintf(w, "File uploaded and encrypted successfully! MPD: %s", mpdPath)
 }
 
-func ConvertToMP4(inputFile, outputFile string) error {
-	cmd := exec.Command("ffmpeg", "-i", inputFile, "-c:v", "libx264", "-c:a", "aac",
-		"-movflags", "faststart+frag_keyframe", // Ensures MP4 is compatible with MP4Box
-		outputFile)
+func EncryptAndPackage(inputFile, outputFile, mpdFile string) error {
+	cmd := exec.Command("packager",
+		fmt.Sprintf("in=%s,stream=video,output=%s,drm_label=SD", inputFile, outputFile),
+		"--enable_raw_key_encryption",
+		"--keys=label=SD:key_id=0123456789abcdef0123456789abcdef:key=abcdef0123456789abcdef0123456789",
+		fmt.Sprintf("--mpd_output=%s", mpdFile),
+	)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("FFmpeg error: %v\n%s", err, string(output))
+		return fmt.Errorf("Shaka Packager error: %v\n%s", err, string(output))
 	}
 
-	fmt.Println("Video converted successfully! Checking if the file exists...")
-
-	// Check if file exists before passing to MP4Box
-	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
-		return fmt.Errorf("Converted file does not exist: %s", outputFile)
-	}
-
-	// Now package it to DASH
-	err = PackageToDASH(outputFile, "uploads")
-	if err != nil {
-		fmt.Println("Error while converting to DASH:", err)
-	}
+	fmt.Println("Encryption & DASH Packaging completed successfully!")
 	return nil
 }
+
+// func PackageToDASH(inputFile, uploadFolder string) error {
+// 	outputMPD := fmt.Sprintf("%s/output.mpd", uploadFolder)
+
+// 	drmConfig := fmt.Sprintf("%s/drm.xml", "Server")
+// 	// Debug: Print input file path
+// 	fmt.Println("DASH Packaging Input File:", inputFile)
+// 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
+// 		return fmt.Errorf("MP4Box error: input file does not exist: %s", inputFile)
+// 	}
+
+// 	// Run MP4Box
+// 	cmd := exec.Command("MP4Box", "-crypt", drmConfig, "-dash", "4000", "-frag", "4000", "-rap",
+// 		"-segment-name", fmt.Sprintf("%s/segment_", "segments"), // Store segments in uploads folder
+// 		"-out", outputMPD,
+// 		"-bs-switching", "no",
+// 		"-profile", "dashavc264:onDemand",
+// 		"-mpd-title", "DRM Video",
+// 		"-subsegs-per-sidx", "1",
+// 		"-crypt", drmConfig,
+// 		inputFile)
+// 	// cmd := exec.Command("MP4Box",
+// 	// 	"-dash", "4000", "-frag", "4000", "-rap",
+// 	// 	"-segment-name", fmt.Sprintf("%s/segment_", "segments"),
+// 	// 	"-out", outputMPD,
+// 	// 	"-encrypt",
+// 	// 	"-enc-key", fmt.Sprintf("%s:%s", kid, key), // KID:KEY pair
+// 	// 	inputFile,
+// 	// )
+// 	err := cmd.Run()
+// 	return err
+
+// 	// cmd.Dir = uploadFolder
+
+// 	// output, err := cmd.CombinedOutput()
+// 	// if err != nil {
+// 	// 	return fmt.Errorf("MP4Box error: %v\n%s", err, string(output))
+// 	// }
+
+// 	// fmt.Println("DASH Packaging completed in", uploadFolder)
+// 	// return nil
+// }
+
+// func ConvertToMP4(inputFile, outputFile string) error {
+// 	cmd := exec.Command("ffmpeg", "-i", inputFile, "-c:v", "libx264", "-c:a", "aac",
+// 		"-movflags", "faststart+frag_keyframe", // Ensures MP4 is compatible with MP4Box
+// 		outputFile)
+
+// 	output, err := cmd.CombinedOutput()
+// 	if err != nil {
+// 		return fmt.Errorf("FFmpeg error: %v\n%s", err, string(output))
+// 	}
+
+// 	fmt.Println("Video converted successfully! Checking if the file exists...")
+
+// 	// Check if file exists before passing to MP4Box
+// 	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+// 		return fmt.Errorf("Converted file does not exist: %s", outputFile)
+// 	}
+
+// 	// Now package it to DASH
+// 	err = PackageToDASH(outputFile, "uploads")
+// 	if err != nil {
+// 		fmt.Println("Error while converting to DASH:", err)
+// 	}
+// 	return nil
+// }
 
 // func ConvertVideo(inputFile, outputFile, uploadFolder string, progressChan chan string) error {
 // 	// Convert video using FFmpeg
@@ -287,6 +367,9 @@ func main() {
 	// Apply logging middleware for requests
 	r.Use(LoggingMiddleware)
 
+	fs := http.FileServer(http.Dir("uploads/encrypted"))
+	r.Handle("/encrypted/", http.StripPrefix("/encrypted/", fs))
+
 	// Define routes
 	r.HandleFunc("/", HomeHandler).Methods("GET")
 
@@ -306,7 +389,7 @@ func main() {
 	// fmt.Println("Server running on port 8080")
 	// http.ListenAndServe(":3000", r)
 	log.Println("Server started at http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", r)
 
 }
 
