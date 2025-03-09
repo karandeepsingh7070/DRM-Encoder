@@ -3,12 +3,18 @@ import { useRef } from "react";
 import EncodingConfig from "./EncodingConfig";
 import shaka from "shaka-player";
 
-const TestPlayback = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, manifestUrl }: any) => {
+// type Config = {
+//     encryptionType: string
+//     setEncryptionType: (type:string) => void
+//     useTestServer: boolean
+//     setUseTestServer: (type:boolean) => void
+//     manifestUrl: string
+// }
+const TestPlayback = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, manifestUrl }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     async function initPlayer() {
         if (!videoRef.current) return;
-
         shaka.polyfill.installAll(); // Install polyfills for better compatibility
 
         const player = new shaka.Player(videoRef.current);

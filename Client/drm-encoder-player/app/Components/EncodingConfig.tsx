@@ -1,7 +1,13 @@
 'use client'
 import React, { useEffect } from 'react'
 
-const EncodingConfig = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer }: any) => {
+type Config = {
+    encryptionType: string
+    setEncryptionType: (type:string) => void
+    useTestServer: boolean
+    setUseTestServer: (type:boolean) => void
+}
+const EncodingConfig = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer }: Config) => {
 
     const saveToSession = (e: React.ChangeEvent<HTMLInputElement>,type:string) => {
         sessionStorage.setItem(type,e.target.value)

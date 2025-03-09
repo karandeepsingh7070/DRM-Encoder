@@ -2,14 +2,21 @@
 import { useState } from "react";
 import EncodingConfig from "./EncodingConfig";
 
-const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, segmentSize, includeAudio }: any) => {
+type Config = {
+    encryptionType: string
+    setEncryptionType: (type:string) => void
+    useTestServer: boolean
+    setUseTestServer: (type:boolean) => void
+    segmentSize: string
+    includeAudio: string
+}
+const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, segmentSize, includeAudio }: Config) => {
 
     console.log(segmentSize, includeAudio)
 
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
-    const [files, setFiles] = useState([]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+'use client'
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import EncryptVideo from './EncryptVideo';
-import TestPlayback from './TestPLayback';
+import TestPlayback from './TestPlayback';
 
 const Home = () => {
   const [selectedTab, setSelectedTab] = useState('encrypt');
@@ -9,6 +10,11 @@ const Home = () => {
   const [useTestServer, setUseTestServer] = useState(true);
   const [segmentSize,setSegmentSize] = useState("4")
   const [includeAudio,setIncludeAudio] = useState("yes")
+
+  useEffect(() => {
+    setSegmentSize("4")
+    setIncludeAudio("yes")
+  },[])
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
