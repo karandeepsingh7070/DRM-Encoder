@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"fmt"
 	"io"
 	"log"
@@ -38,6 +39,12 @@ var allowedEncryption = map[string]bool{
 	"PlayReady": true,
 }
 
+type Response struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	FileURL string `json:"file_url,omitempty"` // Optional, only included on success
+}
+
 // Handlers
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Limit upload size to 100MB
@@ -46,6 +53,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Get uploaded file - video (key name)
 	file, handler, err := r.FormFile("video")
 	if err != nil {
+		fmt.Println("Error retrieving the file!")
 		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
 		return
 	}
@@ -62,6 +70,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	uploadPath := fmt.Sprintf("uploads/%s", handler.Filename)
 	dst, err := os.Create(uploadPath)
 	if err != nil {
+		fmt.Println("Error saving the file")
 		http.Error(w, "Error saving the file", http.StatusInternalServerError)
 		return
 	}
@@ -76,6 +85,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	segmentSize := r.FormValue("segmentSize")
 	encryptionType := r.FormValue("encryptionType")
 	includeAudio := r.FormValue("includeAudio")
+
+	fmt.Println(segmentSize)
 
 	if segmentSize == "" {
 		segmentSize = "4" // Default segment size in seconds
@@ -97,14 +108,16 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "File uploaded and encrypted successfully! MPD: %s", mpdPath)
+	fmt.Println("Video uploaded successfully!")
 }
 
 func EncryptDashAndPackage(inputFile, outputFile, segmentSize, encryptionType, includeAudio string) error {
 
+	fmt.Println("Video encryption!")
 	cmdArgs := []string{
 		"packager",
 		fmt.Sprintf("input=%s,stream=video,init_segment=%s/video_init.mp4,segment_template=%s/video_$Number$.m4s", inputFile, outputFile, outputFile),
-		fmt.Sprintf("--segment_duration=%s", segmentSize),
+		fmt.Sprintf("--segment_duration=%s", "4"),
 		"--segment_sap_aligned",
 		"--generate_static_live_mpd",
 		"--mpd_output", fmt.Sprintf("%s/stream.mpd", outputFile),
@@ -141,6 +154,7 @@ func EncryptDashAndPackage(inputFile, outputFile, segmentSize, encryptionType, i
 				"--keys", "key_id=07507c220e89a23e20b25a2d03b74d53:key=6e19d3fabf454e4f0be778844354cf81",
 			)
 		default:
+			fmt.Println("Unknown encryption type")
 			log.Println("Unknown encryption type.")
 		}
 	}
@@ -154,6 +168,61 @@ func EncryptDashAndPackage(inputFile, outputFile, segmentSize, encryptionType, i
 	return nil
 }
 
+func CreateZipArchive(sourceDir, zipPath string) error {
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		return err
+	}
+	defer zipFile.Close()
+
+	writer := zip.NewWriter(zipFile)
+	defer writer.Close()
+
+	files, err := os.ReadDir(sourceDir)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			filePath := filepath.Join(sourceDir, file.Name())
+			fileToZip, err := os.Open(filePath)
+			if err != nil {
+				return err
+			}
+			defer fileToZip.Close()
+
+			zipEntry, err := writer.Create(file.Name())
+			if err != nil {
+				return err
+			}
+
+			_, err = io.Copy(zipEntry, fileToZip)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func DownloadZipHandler(w http.ResponseWriter, r *http.Request) {
+	zipFilePath := "uploads/encrypted/encrypted_videos.zip"
+
+	// Create ZIP file containing all encrypted videos
+	err := CreateZipArchive("uploads/encrypted", zipFilePath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create ZIP file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Serve the ZIP file for download
+	w.Header().Set("Content-Disposition", "attachment; filename=encrypted_videos.zip")
+	w.Header().Set("Content-Type", "application/zip")
+	http.ServeFile(w, r, zipFilePath)
+}
+
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Welcome to DRM Encoder")
 }
@@ -164,8 +233,9 @@ func main() {
 	// routes
 	r.HandleFunc("/", HomeHandler).Methods("GET")
 	r.HandleFunc("/upload", UploadHandler).Methods("POST")
+	r.HandleFunc("/get-files", DownloadZipHandler).Methods("GET")
 	r.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", enableCORS(http.FileServer(http.Dir("uploads/encrypted")))))
 
 	log.Println("Server started at http://localhost:8080")
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(":8080", enableCORS(r))
 }
