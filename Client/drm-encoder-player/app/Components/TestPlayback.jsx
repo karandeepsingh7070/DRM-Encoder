@@ -54,6 +54,7 @@ const TestPlayback = ({ encryptionType, setEncryptionType, useTestServer, setUse
             <section className="mb-8 bg-white p-6 rounded shadow">
                 <button className="px-4 py-2 cursor-pointer bg-blue-500 text-white rounded" onClick={initPlayer}>Play Video</button>
                 <h6 className="text-red-500 pt-2 pb-3">IMPORTANT : Keep the encryption type & keys same used during encoding</h6>
+                <p>Run widevineTest html on your local to test the segments downloaded for Widevine</p>
                 <div className="w-full flex flex-col items-center">
                     <video
                         ref={videoRef}
