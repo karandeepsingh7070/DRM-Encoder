@@ -27,7 +27,7 @@ const EncodingConfig = ({ encryptionType, setEncryptionType, useTestServer, setU
                         onChange={(e) => setEncryptionType(e.target.value)}
                         >
                         <option value="Widevine">Widevine</option>
-                        <option value="Playready">PlayReady</option>
+                        <option disabled={true} value="Playready">PlayReady</option>
                         <option value="RawKey">Raw Key</option>
                     </select>
                 </label>

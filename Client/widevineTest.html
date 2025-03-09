@@ -1,0 +1,25 @@
+<html>
+
+<body>
+  <video id="video" controls autoplay></video>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+  <script>
+    async function initPlayer() {
+      const video = document.getElementById('video');
+      const player = new shaka.Player(video);
+      player.configure({
+        drm: {
+          servers: {
+            'com.widevine.alpha': 'https://license.uat.widevine.com/cenc/getlicense/widevine_test'
+          }
+        }
+      });
+      player.load('http://localhost:8080/uploads/stream.mpd')
+        .then(() => console.log("Widevine stream loaded successfully!"))
+        .catch(error => console.error("Error loading video:", error));
+    }
+    document.addEventListener('DOMContentLoaded', initPlayer);
+  </script>
+</body>
+
+</html>
