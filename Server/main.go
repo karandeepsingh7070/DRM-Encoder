@@ -49,7 +49,7 @@ type Response struct {
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Limit upload size to 100MB
 	r.ParseMultipartForm(100 << 20) // 100MB
-
+	DeleteEncryptedFolderHandler()
 	// Get uploaded file - video (key name)
 	file, handler, err := r.FormFile("video")
 	if err != nil {
@@ -166,6 +166,22 @@ func EncryptDashAndPackage(inputFile, outputFile, segmentSize, encryptionType, i
 
 	fmt.Println("Encryption & DASH Packaging completed successfully!")
 	return nil
+}
+
+// Function to delete the encrypted folder
+func DeleteEncryptedFolderHandler() {
+	folderPath := "uploads/encrypted"
+
+	err := os.RemoveAll(folderPath) // Delete the folder and its contents
+	if err != nil {
+		return
+	}
+
+	// Recreate the folder to prevent issues with new uploads
+	err = os.MkdirAll(folderPath, os.ModePerm)
+	if err != nil {
+		return
+	}
 }
 
 func CreateZipArchive(sourceDir, zipPath string) error {

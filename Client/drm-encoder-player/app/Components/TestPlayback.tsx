@@ -18,14 +18,24 @@ const TestPlayback = ({ encryptionType, setEncryptionType, useTestServer, setUse
         });
 
         try {
-            await player.configure({
-                drm: {
-                    clearKeys: {
-                        "07507c220e89a23e20b25a2d03b74d53": "6e19d3fabf454e4f0be778844354cf81"
+            if(encryptionType === 'Widevine') {
+                await   player.configure({
+                    drm: {
+                        servers: {
+                          'com.widevine.alpha': 'https://license.uat.widevine.com/cenc/getlicense/widevine_test'
+                        }
+                      }
+                  });
+            }else {
+                await player.configure({
+                    drm: {
+                        clearKeys: {
+                            "07507c220e89a23e20b25a2d03b74d53": "6e19d3fabf454e4f0be778844354cf81"
+                        }
                     }
-                }
-            });
-            await player.load("http://localhost:8080/uploads/stream.mpd");
+                });
+            }
+            await player.load(manifestUrl);
             console.log("The video has loaded successfully!");
         } catch (error) {
             console.error("Error loading manifest:", error);

@@ -6,7 +6,7 @@ import TestPlayback from './TestPLayback';
 const Home = () => {
   const [selectedTab, setSelectedTab] = useState('encrypt');
   const [encryptionType, setEncryptionType] = useState('Widevine');
-  const [useTestServer, setUseTestServer] = useState(false);
+  const [useTestServer, setUseTestServer] = useState(true);
   const [segmentSize,setSegmentSize] = useState("4")
   const [includeAudio,setIncludeAudio] = useState("yes")
 
