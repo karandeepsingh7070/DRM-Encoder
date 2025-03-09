@@ -3,15 +3,8 @@ import { useRef } from "react";
 import EncodingConfig from "./EncodingConfig";
 import shaka from "shaka-player";
 
-// type Config = {
-//     encryptionType: string
-//     setEncryptionType: (type:string) => void
-//     useTestServer: boolean
-//     setUseTestServer: (type:boolean) => void
-//     manifestUrl: string
-// }
 const TestPlayback = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, manifestUrl }) => {
-    const videoRef = useRef<HTMLVideoElement>(null);
+    const videoRef = useRef(null);
 
     async function initPlayer() {
         if (!videoRef.current) return;
