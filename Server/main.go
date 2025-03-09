@@ -32,6 +32,12 @@ var allowedExtensions = map[string]bool{
 	".mp4": true,
 }
 
+var allowedEncryption = map[string]bool{
+	"Widevine":  true,
+	"RawKey":    true,
+	"PlayReady": true,
+}
+
 // Handlers
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// Limit upload size to 100MB
@@ -67,12 +73,24 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	segmentSize := r.FormValue("segmentSize")
+	encryptionType := r.FormValue("encryptionType")
+	includeAudio := r.FormValue("includeAudio")
+
+	if segmentSize == "" {
+		segmentSize = "4" // Default segment size in seconds
+	}
+	if !allowedEncryption[encryptionType] {
+		http.Error(w, "Invalid Encryption Type.", http.StatusBadRequest)
+		return
+	}
+
 	// Generate output paths
 	encryptedPath := "uploads/encrypted/"
 	mpdPath := "uploads/encrypted/stream.mpd"
 
 	// Run encryption
-	err = EncryptDashAndPackage(uploadPath, encryptedPath)
+	err = EncryptDashAndPackage(uploadPath, encryptedPath, segmentSize, encryptionType, includeAudio)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Encryption failed: %v", err), http.StatusInternalServerError)
 		return
@@ -81,14 +99,53 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "File uploaded and encrypted successfully! MPD: %s", mpdPath)
 }
 
-func EncryptDashAndPackage(inputFile, outputFile string) error {
-	cmd := exec.Command(
+func EncryptDashAndPackage(inputFile, outputFile, segmentSize, encryptionType, includeAudio string) error {
+	// cmd := exec.Command(
+	// 	"packager",
+	// 	fmt.Sprintf("input=%s,stream=video,output=%s/video.mp4", inputFile, outputFile),
+	// 	fmt.Sprintf("input=%s,stream=audio,output=%s/audio.mp4", inputFile, outputFile),
+	// 	"--mpd_output", fmt.Sprintf("%s/stream.mpd", outputFile),
+	// 	"--base_urls", "http://localhost:8080/encrypted/",
+	// )
+
+	cmdArgs := []string{
 		"packager",
-		fmt.Sprintf("input=%s,stream=video,output=%s/video.mp4", inputFile, outputFile),
-		fmt.Sprintf("input=%s,stream=audio,output=%s/audio.mp4", inputFile, outputFile),
+		fmt.Sprintf("input=%s,stream=video,init_segment=%s/video_init.mp4,segment_template=%s/video_$Number$.m4s", inputFile, outputFile, outputFile),
+		fmt.Sprintf("--segment_duration=%s", segmentSize),
+		"--segment_sap_aligned",
+		"--generate_static_live_mpd",
 		"--mpd_output", fmt.Sprintf("%s/stream.mpd", outputFile),
-		"--base_urls", "http://localhost:8080/encrypted/", // tells if the client is not on the same server whaere to pick the files
-	)
+		"--base_urls", "http://localhost:8080/encrypted/",
+	}
+
+	if includeAudio == "yes" {
+		cmdArgs = append(cmdArgs,
+			fmt.Sprintf("input=%s,stream=audio,init_segment=%s/audio_init.mp4,segment_template=%s/audio_$Number$.m4s", inputFile, outputFile, outputFile),
+		)
+	}
+
+	if encryptionType != "" {
+		switch encryptionType {
+		case "RawKey":
+			cmdArgs = append(cmdArgs,
+				"--enable_raw_key_encryption",
+				"--keys", "key_id=07507c220e89a23e20b25a2d03b74d53:key=6e19d3fabf454e4f0be778844354cf81",
+			)
+		case "Widevine":
+			cmdArgs = append(cmdArgs,
+				"--enable_widevine_encryption",
+				"--keys", "key_id=07507c220e89a23e20b25a2d03b74d53:key=6e19d3fabf454e4f0be778844354cf81",
+			)
+		case "PlayReady":
+			cmdArgs = append(cmdArgs,
+				"--enable_raw_key_encryption",
+				"--keys", "key_id=07507c220e89a23e20b25a2d03b74d53:key=6e19d3fabf454e4f0be778844354cf81",
+			)
+		default:
+			log.Println("Unknown encryption type.")
+		}
+	}
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("Shaka Packager error: %v\n%s", err, string(output))
