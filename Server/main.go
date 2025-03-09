@@ -100,13 +100,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func EncryptDashAndPackage(inputFile, outputFile, segmentSize, encryptionType, includeAudio string) error {
-	// cmd := exec.Command(
-	// 	"packager",
-	// 	fmt.Sprintf("input=%s,stream=video,output=%s/video.mp4", inputFile, outputFile),
-	// 	fmt.Sprintf("input=%s,stream=audio,output=%s/audio.mp4", inputFile, outputFile),
-	// 	"--mpd_output", fmt.Sprintf("%s/stream.mpd", outputFile),
-	// 	"--base_urls", "http://localhost:8080/encrypted/",
-	// )
 
 	cmdArgs := []string{
 		"packager",
@@ -134,6 +127,12 @@ func EncryptDashAndPackage(inputFile, outputFile, segmentSize, encryptionType, i
 		case "Widevine":
 			cmdArgs = append(cmdArgs,
 				"--enable_widevine_encryption",
+				"--key_server_url=https://license.uat.widevine.com/cenc/getcontentkey/widevine_test",
+				"--content_id=7465737420636f6e74656e74206964",
+				"--signer=widevine_test",
+				"--aes_signing_key=1ae8ccd0e7985cc0b6203a55855a1034afc252980e970ca90e5202689f947ab9",
+				"--aes_signing_iv=d58ce954203b7c9a9a9d467f59839249",
+				"--protection_systems=Widevine",
 				"--keys", "key_id=07507c220e89a23e20b25a2d03b74d53:key=6e19d3fabf454e4f0be778844354cf81",
 			)
 		case "PlayReady":
