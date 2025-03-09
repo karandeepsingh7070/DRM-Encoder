@@ -53,6 +53,7 @@ const Home = () => {
             setEncryptionType={setEncryptionType}
             useTestServer={useTestServer}
             setUseTestServer={setUseTestServer}
+            manifestUrl={"http://localhost:8080/uploads/stream.mpd"}
           />
         )}
       </main>
