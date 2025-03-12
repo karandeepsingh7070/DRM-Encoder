@@ -7,10 +7,12 @@ type Config = {
     setEncryptionType: (type:string) => void
     useTestServer: boolean
     setUseTestServer: (type:boolean) => void
-    segmentSize: string
-    includeAudio: string
+    segmentSize: string,
+    includeAudio: string,
+    setSegmentSize: (val:string) => void,
+    setIncludeAudio: (val:string) => void,
 }
-const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, segmentSize, includeAudio }: Config) => {
+const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, segmentSize, includeAudio,setSegmentSize,setIncludeAudio }: Config) => {
 
     console.log(segmentSize, includeAudio)
 
@@ -36,7 +38,7 @@ const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUse
         formData.append("video", file);
         formData.append("encryptionType", encryptionType);
         // formData.append("segmentSize", segmentSize);
-        // formData.append("includeAudio", includeAudio);
+        formData.append("includeAudio", includeAudio);
 
         try {
             const response = await fetch("http://localhost:8080/upload", {
@@ -75,6 +77,10 @@ const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUse
                     setEncryptionType={setEncryptionType}
                     useTestServer={useTestServer}
                     setUseTestServer={setUseTestServer}
+                    segmentSize={segmentSize}
+                    includeAudio={includeAudio}
+                    setSegmentSize={setSegmentSize}
+                    setIncludeAudio={setIncludeAudio}
                 />
                 <div className="bg-white p-6 rounded shadow">
                     <label className="block mb-4 p-5 border-2">

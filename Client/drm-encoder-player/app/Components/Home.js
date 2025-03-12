@@ -52,6 +52,8 @@ const Home = () => {
             setUseTestServer={setUseTestServer}
             segmentSize={segmentSize}
             includeAudio={includeAudio}
+            setSegmentSize={setSegmentSize}
+            setIncludeAudio={setIncludeAudio}
           />
         ) : (
           <TestPlayback
