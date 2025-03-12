@@ -25,7 +25,7 @@ const Home = () => {
 
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Video Encryption</h1>
+          <h1 className="text-xl font-bold">Forge DRM</h1>
           <nav>
             <button
               className={`px-4 py-2 mx-2 ${selectedTab === 'encrypt' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
