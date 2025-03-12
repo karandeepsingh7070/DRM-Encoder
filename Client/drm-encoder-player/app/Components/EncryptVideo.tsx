@@ -14,8 +14,6 @@ type Config = {
 }
 const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUseTestServer, segmentSize, includeAudio,setSegmentSize,setIncludeAudio }: Config) => {
 
-    console.log(segmentSize, includeAudio)
-
     const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
@@ -37,7 +35,7 @@ const EncryptVideo = ({ encryptionType, setEncryptionType, useTestServer, setUse
         const formData = new FormData();
         formData.append("video", file);
         formData.append("encryptionType", encryptionType);
-        // formData.append("segmentSize", segmentSize);
+        formData.append("segmentSize", segmentSize);
         formData.append("includeAudio", includeAudio);
 
         try {
