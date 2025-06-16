@@ -1,4 +1,4 @@
-# 🎬 DRM Video Encoder & Player
+# DRM Video Encoder & Player
 
 ## 📌 Overview
 DRM Video Encoder & Player is a web application that allows users to **convert normal videos to DRM-encrypted formats** (Widevine, PlayReady, Raw Key) and test playback using **Shaka Player**. The backend is built using **Go** and **Shaka Packager**, while the frontend is developed with **Next.js** and **Tailwind CSS**.
